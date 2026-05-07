@@ -1,0 +1,32 @@
+name: Build Aura OS
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Build Essentials
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-x86-64-elf binutils-x86-64-elf xorriso mtools
+
+    - name: Build Kernel
+      run: |
+        # コンパイル
+        x86_64-elf-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
+        
+        # リンク (以前作成した linker.ld を使用)
+        x86_64-elf-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
+
+    - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: aura-kernel
+        path: kernel.elf
