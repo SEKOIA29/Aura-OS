@@ -9,20 +9,26 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
 
-    - name: Install Build Essentials
+    - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-x86-64-elf binutils-x86-64-elf xorriso mtools
+        sudo apt-get install -y xorriso mtools wget tar
+
+    - name: Setup Cross Compiler (x86_64-elf-gcc)
+      run: |
+        # コンパイル済みのツールチェーンをダウンロード
+        wget https://github.com/stivale/toolchains/releases/download/v1.1/x86_64-elf-gcc-12.2.0-Linux-x86_64.tar.gz
+        tar -xzf x86_64-elf-gcc-12.2.0-Linux-x86_64.tar.gz
+        # パスを通す
+        echo "$(pwd)/x86_64-elf-gcc/bin" >> $GITHUB_PATH
 
     - name: Build Kernel
       run: |
         # コンパイル
         x86_64-elf-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
         
-        # リンク (以前作成した linker.ld を使用)
+        # リンク (linker.ld がリポジトリにある前提)
         x86_64-elf-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
 
     - name: Upload Kernel Artifact
