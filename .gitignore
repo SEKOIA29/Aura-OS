@@ -1,0 +1,10 @@
+# ビルド成果物
+*.o
+*.elf
+*.iso
+iso_root/
+
+# Limineのバイナリ
+limine-bios.sys
+limine-bios-cd.bin
+limine
