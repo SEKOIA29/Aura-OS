@@ -10,8 +10,9 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu xorriso mtools wget tar
-
+        sudo apt-get install -y gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu \
+          xorriso mtools wget tar gcc make
+          
     - name: Build Kernel
       run: |
         x86_64-linux-gnu-gcc -c src/kernel.c -o kernel.o \
@@ -31,11 +32,12 @@ jobs:
         mkdir limine_work
         tar -xf limine.tar.gz -C limine_work --strip-components=1
 
-        cp limine_work/limine-bios.sys      iso_root/
-        cp limine_work/limine-bios-cd.bin   iso_root/
-        # v7 ships the installer as 'limine-bios-install', not 'limine'
-        cp limine_work/limine-bios-install  iso_root/
-        chmod +x iso_root/limine-bios-install
+        # ホストツール（limine コマンド）をソースからビルド
+        make -C limine_work
+
+        # バイナリファイルをコピー
+        cp limine_work/limine-bios.sys    iso_root/
+        cp limine_work/limine-bios-cd.bin iso_root/
 
     - name: Create ISO
       run: |
@@ -43,7 +45,10 @@ jobs:
           -no-emul-boot -boot-load-size 4 -boot-info-table \
           iso_root -o aura-os.iso
 
-        ./iso_root/limine-bios-install aura-os.iso
+        # ビルドした limine コマンドで BIOS インストール
+        ./limine_work/limine bios-install aura-os.iso
+
+ 
 
     - name: Upload ISO Artifact
       uses: actions/upload-artifact@v4
