@@ -28,23 +28,22 @@ jobs:
         mkdir -p iso_root
         cp kernel.elf config/limine.conf iso_root/
         
-        # リリースアーカイブを丸ごとダウンロードして解凍
+        # アーカイブ取得と解凍
         wget https://github.com/limine-bootloader/limine/archive/refs/heads/v7.x-binary.tar.gz
         tar -xf v7.x-binary.tar.gz
         
-        # 必要なバイナリをコピー (フォルダ名は解凍されたものに合わせる)
-        cp limine-7.x-binary/limine-bios.sys \
-           limine-7.x-binary/limine-bios-cd.bin \
-           limine-7.x-binary/limine \
+        # フォルダ名が何であれ、中身のバイナリを強制コピー
+        # 解凍されたフォルダ（limine-で始まるもの）の中から必要なものを iso_root に集約
+        cp limine-*/limine-bios.sys \
+           limine-*/limine-bios-cd.bin \
+           limine-*/limine \
            iso_root/
         
-        # インストーラーに実行権限を付与
         chmod +x iso_root/limine
 
     - name: Create ISO
       run: |
         xorriso -as mkisofs -b limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table iso_root -o aura-os.iso
-        # iso_root の中にある limine コマンドを使用
         ./iso_root/limine bios-install aura-os.iso
 
     - name: Upload ISO Artifact
