@@ -2,27 +2,28 @@
 #include <stddef.h>
 #include "limine.h"
 
-// Limineプロトコルでフレームバッファを要求
-static volatile struct limine_framebuffer_request fb_req = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
+// Limineへのメモリマップ要求
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
     .revision = 0
 };
 
-// カーネルのエントリポイント
 void _start(void) {
-    // レスポンスが正常か確認
-    if (fb_req.response == NULL || fb_req.response->framebuffer_count < 1) {
-        while (1) { __asm__("hlt"); }
+    // リクエストが成功したかチェック
+    if (memmap_request.response == NULL) {
+        for (;;);
     }
 
-    struct limine_framebuffer *fb = fb_req.response->framebuffers[0];
-
-    // 画面全体を「Aura」をイメージした色で塗りつぶす
-    uint32_t *fb_ptr = (uint32_t *)fb->address;
-    for (size_t i = 0; i < fb->width * fb->height; i++) {
-        fb_ptr[i] = 0x2E3440; // 深みのあるモダンなグレー（Nordテーマ風）
+    // エントリ数を確認
+    uint64_t entry_count = memmap_request.response->entry_count;
+    
+    for (uint64_t i = 0; i < entry_count; i++) {
+        struct limine_memmap_entry *entry = memmap_request.response->entries[i];
+        
+        // entry->type が LIMINE_MEMMAP_USABLE なら、そこは自由に使っていい場所です
+        // entry->base : 開始アドレス
+        // entry->length : サイズ
     }
 
-    // CPUを停止させて待機
-    while (1) { __asm__("hlt"); }
+    for (;;);
 }
