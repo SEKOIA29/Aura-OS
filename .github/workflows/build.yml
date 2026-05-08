@@ -8,10 +8,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4  # これが絶対に必要です
-
-    - name: Debug - List files
-      run: ls -R  # ファイルがどこにあるかログに強制出力させます
+      uses: actions/checkout@v4
 
     - name: Install Dependencies
       run: |
@@ -20,15 +17,19 @@ jobs:
 
     - name: Build Kernel
       run: |
-        # カレントディレクトリにある kernel.c をコンパイル
-        x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
+        # 現在のルートにある kernel.c をコンパイル
+        x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -Isrc
         
-        x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
+        # config フォルダ内の linker.ld を使用してリンク
+        x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T config/linker.ld kernel.o -o kernel.elf
 
     - name: Prepare ISO Root
       run: |
         mkdir -p iso_root
-        cp kernel.elf limine.conf iso_root/
+        # ルートにある elf と config フォルダ内の conf をコピー
+        cp kernel.elf config/limine.conf iso_root/
+        
+        # Limineバイナリ取得
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios.sys
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios-cd.bin
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine
@@ -37,9 +38,7 @@ jobs:
 
     - name: Create ISO
       run: |
-        xorriso -as mkisofs -b limine-bios-cd.bin \
-                -no-emul-boot -boot-load-size 4 -boot-info-table \
-                iso_root -o aura-os.iso
+        xorriso -as mkisofs -b limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table iso_root -o aura-os.iso
         ./limine bios-install aura-os.iso
 
     - name: Upload ISO Artifact
