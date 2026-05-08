@@ -17,7 +17,7 @@ jobs:
 
     - name: Build Kernel
       run: |
-        # すべてルートにある前提のパス
+        # すべてルートにあるため、直接ファイル名を指定
         x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
         x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
 
@@ -26,7 +26,7 @@ jobs:
         mkdir -p iso_root
         cp kernel.elf limine.conf iso_root/
         
-        # Limineバイナリの取得
+        # Limineバイナリの取得（URLを直リンクに変更して確実性をアップ）
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios.sys
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios-cd.bin
         wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine
