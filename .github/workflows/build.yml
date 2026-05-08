@@ -13,23 +13,16 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y xorriso mtools wget tar
-
-    - name: Setup Cross Compiler (x86_64-elf-gcc)
-      run: |
-        # コンパイル済みのツールチェーンをダウンロード
-        wget https://github.com/stivale/toolchains/releases/download/v1.1/x86_64-elf-gcc-12.2.0-Linux-x86_64.tar.gz
-        tar -xzf x86_64-elf-gcc-12.2.0-Linux-x86_64.tar.gz
-        # パスを通す
-        echo "$(pwd)/x86_64-elf-gcc/bin" >> $GITHUB_PATH
+        sudo apt-get install -y gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu xorriso mtools wget
 
     - name: Build Kernel
       run: |
-        # コンパイル
-        x86_64-elf-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
+        # 標準のクロスコンパイラを使用
+        # -ffreestanding を付けることで標準ライブラリを切り離し、OS自作用として機能させます
+        x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
         
-        # リンク (linker.ld がリポジトリにある前提)
-        x86_64-elf-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
+        # リンク
+        x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
 
     - name: Upload Kernel Artifact
       uses: actions/upload-artifact@v4
