@@ -26,31 +26,38 @@ jobs:
     - name: Prepare ISO Root
       run: |
         mkdir -p iso_root
-        # カーネルと設定ファイルを配置 (config/limine.conf があることを確認済み)
+        # カーネルと設定ファイルを配置 (config/ フォルダを参照) [cite: 9, 10]
         cp kernel.elf config/limine.conf iso_root/
         
         # Limine アーカイブの取得と解凍
         wget https://github.com/limine-bootloader/limine/archive/refs/heads/v7.x-binary.tar.gz
         tar -xf v7.x-binary.tar.gz
         
-        # 展開されたディレクトリのどこにあっても見つけ出して iso_root に集約する
-        find . -name "limine-bios.sys" -exec cp {} iso_root/ \;
-        find . -name "limine-bios-cd.bin" -exec cp {} iso_root/ \;
-        # インストーラー本体（バイナリのみ）を探す
-        find . -type f -name "limine" ! -name "*.c" ! -name "*.h" -exec cp {} iso_root/ \;
+        # 解凍されたフォルダ名を自動で特定し、1つずつ確実にコピーする
+        # (空行を排除し、find で recursive になるのを防ぐため個別指定します)
+        LIMINE_DIR=$(ls -d limine-*)
+        cp $LIMINE_DIR/limine-bios.sys iso_root/
+        cp $LIMINE_DIR/limine-bios-cd.bin iso_root/
+        cp $LIMINE_DIR/limine iso_root/
         
-        # 実行権限を付与
+        # インストーラーに実行権限を付与 
         chmod +x iso_root/limine
 
     - name: Create ISO
       run: |
-        # xorriso で ISO を作成
+        # xorriso で ISO を作成 [cite: 12]
         xorriso -as mkisofs -b limine-bios-cd.bin \
                 -no-emul-boot -boot-load-size 4 -boot-info-table \
                 iso_root -o aura-os.iso
         
-        # ISO にブートローダーをインストール
+        # ISO にブートローダーをインストール [cite: 12]
         ./iso_root/limine bios-install aura-os.iso
+
+    - name: Upload ISO Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: aura-os-iso
+        path: aura-os.iso
 
     - name: Create ISO
       run: |
