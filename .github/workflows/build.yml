@@ -17,16 +17,16 @@ jobs:
 
     - name: Build Kernel
       run: |
-        # 現在のルートにある kernel.c をコンパイル
-        x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -Isrc
+        # src フォルダ内の kernel.c を指定
+        x86_64-linux-gnu-gcc -c src/kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone -Isrc
         
-        # config フォルダ内の linker.ld を使用してリンク
+        # config フォルダ内の linker.ld を使用
         x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T config/linker.ld kernel.o -o kernel.elf
 
     - name: Prepare ISO Root
       run: |
         mkdir -p iso_root
-        # ルートにある elf と config フォルダ内の conf をコピー
+        # 必要なファイルを iso_root に集約
         cp kernel.elf config/limine.conf iso_root/
         
         # Limineバイナリ取得
