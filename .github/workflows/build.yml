@@ -1,4 +1,4 @@
-name: Build Aura OS
+name: Build Aura OS ISO
 
 on: [push, pull_request]
 
@@ -13,19 +13,39 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu xorriso mtools wget
+        sudo apt-get install -y gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu xorriso mtools wget tar
 
     - name: Build Kernel
       run: |
-        # 標準のクロスコンパイラを使用
-        # -ffreestanding を付けることで標準ライブラリを切り離し、OS自作用として機能させます
+        # カーネルのコンパイルとリンク
         x86_64-linux-gnu-gcc -c kernel.c -o kernel.o -std=c11 -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-pie -fno-pic -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
-        
-        # リンク
         x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T linker.ld kernel.o -o kernel.elf
 
-    - name: Upload Kernel Artifact
+    - name: Prepare ISO Root
+      run: |
+        # ISOの元になるディレクトリ構造を作成
+        mkdir -p iso_root
+        cp kernel.elf limine.conf iso_root/
+        
+        # Limineの最新バイナリをダウンロードして配置
+        # v7.x系統のバイナリリリースを使用
+        wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios.sys
+        wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine-bios-cd.bin
+        wget https://github.com/limine-bootloader/limine/raw/v7.x-binary/limine
+        cp limine-bios.sys limine-bios-cd.bin limine iso_root/
+
+    - name: Create ISO
+      run: |
+        # xorriso を使用して起動可能なISOを作成
+        xorriso -as mkisofs -b limine-bios-cd.bin \
+                -no-emul-boot -boot-load-size 4 -boot-info-table \
+                iso_root -o aura-os.iso
+        
+        # LimineをISOにインストール（BIOS起動用）
+        ./limine bios-install aura-os.iso
+
+    - name: Upload ISO Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: aura-kernel
-        path: kernel.elf
+        name: aura-os-iso
+        path: aura-os.iso
