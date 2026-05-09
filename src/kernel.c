@@ -17,12 +17,7 @@ static volatile struct limine_hhdm_request hhdm_request = {
     .revision = 0
 };
 
-struct heap_chunk {
-    size_t size;
-    struct heap_chunk* next;
-    int free;
-};
-extern struct heap_chunk* heap_start;
+
 
 // --- PMM管理変数 ---
 uint8_t* bitmap;
