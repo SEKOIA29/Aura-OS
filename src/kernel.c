@@ -3,8 +3,6 @@
 #include <stddef.h>
 #include "limine.h"
 
-struct heap_chunk; // 構造体の前方宣言
-extern struct heap_chunk* heap_start;
 
 // --- リクエスト群 ---
 static volatile struct limine_memmap_request memmap_request = {
