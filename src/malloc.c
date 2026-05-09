@@ -1,3 +1,5 @@
+#include "malloc.h"
+
 // メモリブロックのヘッダー
 struct heap_chunk {
     size_t size;                // このブロックのデータ部分のサイズ
