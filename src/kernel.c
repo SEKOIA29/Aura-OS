@@ -135,3 +135,38 @@ void pmm_free(void* ptr) {
     uint64_t index = phys_addr / 4096;
     bitmap_clear(index);
 }
+
+void* kmalloc(size_t size) {
+    if (size == 0) return NULL;
+
+    size = ALIGN(size); // 要求サイズを16バイト境界に整列
+    struct heap_chunk* current = heap_start;
+
+    // 適切な空きブロックを探す
+    while (current) {
+        if (current->free && current->size >= size) {
+            
+            // 分割の判定：残りカスがヘッダー＋最小単位（16Byte）より大きければ分割
+            if (current->size >= (size + HEADER_SIZE + 16)) {
+                // 新しい空きブロック（後半部分）を作成
+                struct heap_chunk* next_chunk = (struct heap_chunk*)((uint8_t*)current + HEADER_SIZE + size);
+                next_chunk->size = current->size - size - HEADER_SIZE;
+                next_chunk->next = current->next;
+                next_chunk->free = 1;
+
+                // 現在のブロックを更新
+                current->size = size;
+                current->next = next_chunk;
+            }
+
+            current->free = 0; // 使用中にマーク
+            
+            // ヘッダーの直後のアドレス（実際のデータ領域）を返す
+            return (void*)((uint8_t*)current + HEADER_SIZE);
+        }
+        current = current->next;
+    }
+
+    // ここでNULLが返る場合は、本来「PMMから新しいページを借りてヒープを広げる」処理が必要
+    return NULL; 
+}
