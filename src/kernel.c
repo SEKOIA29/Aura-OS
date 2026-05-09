@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include "limine.h"
 
+struct heap_chunk* heap_start = NULL;
 
 // --- リクエスト群 ---
 static volatile struct limine_memmap_request memmap_request = {
