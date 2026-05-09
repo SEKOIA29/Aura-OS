@@ -1,23 +1,12 @@
 #include "malloc.h"
 
-// メモリブロックのヘッダー
-struct heap_chunk {
-    size_t size;                // このブロックのデータ部分のサイズ
-    struct heap_chunk* next;    // 次のブロックへのポインタ
-    int free;                   // 1なら空き、0なら使用中
-};
-
-// リストの先頭
+// リストの先頭（実体の定義：externは付けない）
 struct heap_chunk* heap_start = NULL;
 
-// アライメント（16バイト境界に合わせるとCPUが喜びます）
-#define ALIGN(size) (((size) + (16 - 1)) & ~(16 - 1))
-#define HEADER_SIZE sizeof(struct heap_chunk)
-
-
-// PMMからページをもらうためのプロトタイプ宣言（kernel.cにある想定）
+// PMMからページをもらうためのプロトタイプ宣言
 extern void* pmm_alloc(void);
 
+// ヒープの初期化
 void heap_init() {
     // 1. PMMから最初の1ページ(4KB)を借りる
     void* initial_page = pmm_alloc();
