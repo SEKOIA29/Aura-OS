@@ -94,3 +94,44 @@ void _start(void) {
 
     for (;;);
 }
+
+// 次回検索を開始する位置を覚えておくと少し速くなります（Last Fit）
+uint64_t last_index = 0;
+
+void* pmm_alloc(void) {
+    uint64_t total_pages = max_address / 4096;
+
+    for (uint64_t i = 0; i < total_pages; i++) {
+        // last_index から検索を開始して効率化
+        uint64_t index = (last_index + i) % total_pages;
+
+        if (bitmap[index / 8] != 0xff) { // そのバイトに空き(0)が1つ以上あるか
+            for (uint8_t bit = 0; bit < 8; bit++) {
+                if (!((bitmap[index / 8] >> bit) & 1)) {
+                    // 空きビット発見！
+                    uint64_t final_index = (index / 8) * 8 + bit;
+                    bitmap_set(final_index); // 使用中にする
+                    last_index = final_index; // 次回のために場所を記録
+
+                    // 物理アドレスを仮想アドレス(HHDM)に変換して返す
+                    uintptr_t phys_addr = final_index * 4096;
+                    return (void*)(phys_addr + hhdm_request.response->offset);
+                }
+            }
+        }
+    }
+
+    return NULL; // メモリ不足（Out of Memory）
+}
+
+void pmm_free(void* ptr) {
+    if (ptr == NULL) return;
+
+    // 仮想アドレス(HHDM)を物理アドレスに戻す
+    uintptr_t virt_addr = (uintptr_t)ptr;
+    uintptr_t phys_addr = virt_addr - hhdm_request.response->offset;
+
+    // インデックスを計算してビットをクリア
+    uint64_t index = phys_addr / 4096;
+    bitmap_clear(index);
+}
