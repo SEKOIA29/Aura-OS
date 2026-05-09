@@ -1,3 +1,4 @@
+#include "malloc.h"
 #include <stdint.h>
 #include <stddef.h>
 #include "limine.h"
