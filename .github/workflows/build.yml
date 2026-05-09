@@ -15,11 +15,13 @@ jobs:
           
     - name: Build Kernel
       run: |
-        # kernel.c と malloc.c の両方をコンパイル
-        x86_64-linux-gnu-gcc -c src/kernel.c -o kernel.o (オプション略)
-        x86_64-linux-gnu-gcc -c src/malloc.c -o malloc.o (オプション略)
+        # kernel.c をコンパイル
+        x86_64-linux-gnu-gcc -c src/kernel.c -o kernel.o -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-PIE -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
         
-        # 両方のオブジェクトファイルをリンクして elf を作成
+        # malloc.c をコンパイル
+        x86_64-linux-gnu-gcc -c src/malloc.c -o malloc.o -ffreestanding -fno-stack-protector -fno-stack-check -fno-lto -fno-PIE -m64 -march=x86-64 -mno-80387 -mno-mmx -mno-sse -mno-sse2 -mno-red-zone
+        
+        # 両方のオブジェクトファイルをリンク
         x86_64-linux-gnu-ld -nostdlib -static -m elf_x86_64 -T config/linker.ld kernel.o malloc.o -o kernel.elf
 
     - name: Prepare ISO Root
