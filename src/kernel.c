@@ -170,3 +170,30 @@ void* kmalloc(size_t size) {
     // ここでNULLが返る場合は、本来「PMMから新しいページを借りてヒープを広げる」処理が必要
     return NULL; 
 }
+
+void kfree(void* ptr) {
+    if (ptr == NULL) return;
+
+    // データ領域のアドレスからヘッダーのアドレスを逆算
+    struct heap_chunk* chunk = (struct heap_chunk*)((uint8_t*)ptr - HEADER_SIZE);
+    
+    // ブロックを空き状態にする
+    chunk->free = 1;
+
+    // 隣接するブロックとの結合（Coalescing）
+    // 次のブロックが空いていれば、今のブロックに吸収させる
+    struct heap_chunk* current = heap_start;
+    while (current) {
+        if (current->free && current->next && current->next->free) {
+            // 現在のサイズ = 現在のデータサイズ + ヘッダーサイズ + 次のブロックのデータサイズ
+            current->size += HEADER_SIZE + current->next->size;
+            // リンクを一つ飛ばす
+            current->next = current->next->next;
+            
+            // 結合した結果、さらにその次も結合できる可能性があるので
+            // current を進めずに再度チェックする
+            continue; 
+        }
+        current = current->next;
+    }
+}
